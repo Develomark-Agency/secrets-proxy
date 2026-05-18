@@ -1,0 +1,23 @@
+{
+  "name": "client",
+  "module": "index.ts",
+  "type": "module",
+  "private": true,
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@hono/node-server": "^2.0.3",
+    "@hono/standard-validator": "^0.2.2",
+    "@inquirer/prompts": "^8.4.3",
+    "@standard-schema/spec": "^1.1.0",
+    "ansis": "^4.3.0",
+    "citty": "^0.2.2",
+    "dayjs": "^1.11.20",
+    "hono": "^4.12.19",
+    "open": "^11.0.0",
+    "yocto-spinner": "^1.2.0",
+    "zod": "^4.4.3"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
