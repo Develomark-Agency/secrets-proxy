@@ -1,19 +1,19 @@
 {
-  "name": "server",
+  "name": "@secrets-proxy/server",
   "version": "0.0.0",
-  "description": "Alchemy Typescript Project",
   "type": "module",
   "scripts": {
-    "build": "tsc -b",
-    "deploy": "alchemy deploy",
-    "destroy": "alchemy destroy",
-    "dev": "alchemy dev"
+    "deploy": "alchemy deploy --stage prod",
+    "destroy": "alchemy destroy --stage prod",
+    "dev": "alchemy dev",
+    "build:types": "tsdown"
   },
   "devDependencies": {
-    "alchemy": "0.93.7",
     "@cloudflare/workers-types": "^4.20250805.0",
-    "miniflare": "^4.20250617.3",
     "@types/node": "^24.0.3",
+    "alchemy": "0.93.7",
+    "miniflare": "^4.20250617.3",
+    "tsdown": "^0.22.0",
     "typescript": "^5.8.3"
   },
   "dependencies": {
