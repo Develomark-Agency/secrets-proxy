@@ -2,6 +2,7 @@ import path from "node:path";
 import os from "node:os";
 import fs from "node:fs";
 import { tokenCredentialsSchema, tokenSchema, type TokenCredentials } from "../schemas";
+import { refresh } from "./refresh";
 
 const configPath = path.join(
   os.homedir(),
@@ -41,4 +42,20 @@ export async function loadCredentials() {
     } catch {}
     return null;
   }
+}
+
+export async function loadCredentialsWithAutoRefresh() {
+  let credentials = await loadCredentials();
+  if(!credentials || credentials.refreshExpired) {
+    throw new Error("Credentials are expired");
+  }
+
+  if(credentials.isExpired) {
+    await refresh();
+    credentials = await loadCredentials();
+  }
+
+  if(!credentials) throw new Error("Failed to load credentials");
+
+  return credentials;
 }

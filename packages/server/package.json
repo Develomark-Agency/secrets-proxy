@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "deploy": "alchemy deploy --stage prod",
+    "deploy": "NODE_ENV=production alchemy deploy --stage prod",
     "destroy": "alchemy destroy --stage prod",
     "dev": "alchemy dev",
     "build:types": "tsdown"

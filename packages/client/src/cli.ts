@@ -6,7 +6,7 @@ import dayjs from "dayjs";
 import relativeTime from "dayjs/plugin/relativeTime";
 import open from "open";
 import spinner from "yocto-spinner";
-import { loadCredentials, saveCredentials } from "./auth/credentials";
+import { loadCredentials, loadCredentialsWithAutoRefresh, saveCredentials } from "./auth/credentials";
 import { login } from "./auth/login";
 import getPort from "get-port";
 import { client } from "./rpc-client";
@@ -71,7 +71,7 @@ const main = defineCommand({
         name: "Status"
       },
       async run() {
-        let credentials = await loadCredentials();
+        const credentials = await loadCredentials();
 
         console.log(style.bold.blue`Authentication status`);
 
@@ -83,6 +83,21 @@ const main = defineCommand({
           console.log(`${style.dim`│`} ${style.red`✖︎`} Not authenticated`);
           console.log(`${style.dim`│`} Run the ${style.dim`login`} command to authenticate.`);
         }
+      }
+    }),
+    ping: defineCommand({
+      meta: {
+        description: "Ping",
+        name: "Ping"
+      },
+      async run() {
+        const credentials = await loadCredentialsWithAutoRefresh();
+
+        const res = await client.ping.$get({}, {
+          headers: { "Authorization": `Bearer ${credentials.accessToken}` }
+        });
+
+        console.log(res.status, res.statusText, "-", await res.text());
       }
     })
   }

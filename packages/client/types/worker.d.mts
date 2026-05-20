@@ -140,6 +140,15 @@ declare const app: import("hono/hono-base").HonoBase<import("hono/types").BlankE
       status: import("hono/utils/http-status").ContentfulStatusCode;
     };
   };
-}, "/refresh">, "/", "/">;
+}, "/refresh"> | import("hono/types").MergeSchemaPath<{
+  "/": {
+    $get: {
+      input: {};
+      output: "pong";
+      outputFormat: "text";
+      status: import("hono/utils/http-status").ContentfulStatusCode;
+    };
+  };
+}, "/ping">, "/", "/">;
 //#endregion
 export { app as default };
