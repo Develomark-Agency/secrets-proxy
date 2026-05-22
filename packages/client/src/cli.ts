@@ -266,18 +266,19 @@ The secret consists of two authentication methods:
           return { domain: domain!, key: key!, entries };
         }
 
-        const { interactive, domain, type, name, value, key } = args;
-
+        let domain;
         let encrypted;
-        if(interactive) {
+        if(args.interactive) {
           const collected = await getValuesInteractive(args);
+          domain = collected.domain;
           encrypted = await encrypt(collected.key, collected.entries);
-          console.log(encrypted);
         } else {
-          if(!domain) {
+          const { type, name, value, key } = args;
+          if(!args.domain) {
             console.log(`${style.bold.red`error:`} No value provided for --domain`);
             return;
           }
+          domain = args.domain;
 
           if(!key) {
             console.log(`${style.bold.red`error:`} No value provided for --key`);
@@ -311,6 +312,10 @@ The secret consists of two authentication methods:
 
           encrypted = await encrypt(key, entries);
         }
+
+        console.log(style.bold.blue`Enter this key into the secrets proxy KV store`);
+        console.log(`│ ${style.yellow`key:  `} api:${domain}`);
+        console.log(`│ ${style.yellow`value:`} ${encrypted}`);
       }
     })
   }
