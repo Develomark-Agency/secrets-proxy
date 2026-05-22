@@ -55,3 +55,11 @@ export const orgSchema = z.object({
 export const userSchema = z.object({
   login: z.string()
 });
+
+
+// API keys
+
+export const apiKeySchema = z.object({
+  headers: z.record(z.string(), z.string()),
+  query: z.record(z.string(), z.string())
+});

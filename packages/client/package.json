@@ -1,8 +1,6 @@
 {
   "name": "@secrets-proxy/client",
   "module": "index.ts",
-  "type": "module",
-  "private": true,
   "devDependencies": {
     "@hono/node-server": "^2.0.3",
     "@hono/standard-validator": "^0.2.2",
@@ -10,7 +8,7 @@
     "@standard-schema/spec": "^1.1.0",
     "@types/bun": "latest",
     "ansis": "^4.3.0",
-    "citty": "^0.2.2",
+    "cmd-ts": "^0.15.0",
     "dayjs": "^1.11.20",
     "get-port": "^7.2.0",
     "hono": "^4.12.19",
@@ -21,10 +19,12 @@
   "peerDependencies": {
     "typescript": "^5"
   },
+  "exports": {
+    "./auth": "./src/auth/index.ts"
+  },
   "bin": {
     "secrets-proxy": "./src/cli.ts"
   },
-  "exports": {
-    "./auth": "./src/auth/index.ts"
-  }
+  "private": true,
+  "type": "module"
 }
