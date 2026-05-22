@@ -20,7 +20,8 @@
     "typescript": "^5"
   },
   "exports": {
-    "./auth": "./src/auth/index.ts"
+    "./auth": "./src/auth/index.ts",
+    "./fetch": "./src/fetch.ts"
   },
   "bin": {
     "secrets-proxy": "./src/cli.ts"

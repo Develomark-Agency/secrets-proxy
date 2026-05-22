@@ -1,12 +1,14 @@
 import { loadCredentials, saveCredentials } from "./credentials";
 import { client } from "../rpc-client";
 
+const rpcClient = client();
+
 export async function refresh() {
   const creds = await loadCredentials();
 
   if(!creds) throw new Error("Credentials are missing or expired.");
 
-  const res = await client.refresh.$post({
+  const res = await rpcClient.refresh.$post({
     json: { refreshToken: creds.refreshToken }
   });
 

@@ -1,13 +1,18 @@
 import { hc } from "hono/client";
 import type Service from "../types/worker.d.mts";
-import z from "zod";
 
-const env = z.object({
-  SECRETS_PROXY_HOSTNAME: z.string()
-}).parse(process.env);
+export function client(hostname?: string) {
+  let host = hostname;
 
-const hostname = env.SECRETS_PROXY_HOSTNAME.startsWith("http")
-  ? env.SECRETS_PROXY_HOSTNAME
-  : `https://${env.SECRETS_PROXY_HOSTNAME}`;
+  if(!host) {
+    host = process.env.SECRETS_PROXY_HOSTNAME;
+  }
 
-export const client = hc<typeof Service>(hostname);
+  if(!host) throw new Error("Could not determine secrets proxy hostname. Either set `SECRETS_PROXY_HOSTNAME` or supply a hostname to the RPC client");
+
+  if(!host.startsWith("http")) {
+    host = `https://${host}`;
+  }
+  
+  return hc<typeof Service>(host);
+}

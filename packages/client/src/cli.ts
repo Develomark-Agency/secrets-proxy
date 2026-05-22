@@ -13,6 +13,8 @@ import { command, option, string, subcommands, oneOf, run, optional, flag, multi
 
 dayjs.extend(relativeTime);
 
+const rpcClient = client();
+
 const main = subcommands({
   name: "secrets-proxy",
   cmds: {
@@ -36,7 +38,7 @@ const main = subcommands({
         const port = await getPort();
         const nonce = crypto.randomUUID();
 
-        const url = client.login.$url({
+        const url = rpcClient.login.$url({
           query: { cli_port: String(port), nonce }
         });
 
@@ -93,7 +95,7 @@ const main = subcommands({
       async handler(args) {
         const credentials = await loadCredentialsWithAutoRefresh();
 
-        const res = await client.ping.$get({}, {
+        const res = await rpcClient.ping.$get({}, {
           headers: { "Authorization": `Bearer ${credentials.accessToken}` }
         });
 
@@ -112,7 +114,6 @@ secrets-proxy encrypt \\
      -t header -n Authorization -v "Bearer xxx" \\
      -t query -n api_key -v "xxx"
         `.trim(),
-        // description: `Encrypt a secret for ${style.dim`api.example.com`} using the key "mysecret". It consists of two authentication methods: header (Authorization: Bearer xxx) and query parameter (?api_key=abc123)`
         description: `
 Encrypt a secret key for ${style.yellow`api.example.com`}.
 
@@ -267,9 +268,10 @@ The secret consists of two authentication methods:
 
         const { interactive, domain, type, name, value, key } = args;
 
+        let encrypted;
         if(interactive) {
           const collected = await getValuesInteractive(args);
-          const encrypted = await encrypt(collected.key, collected.entries);
+          encrypted = await encrypt(collected.key, collected.entries);
           console.log(encrypted);
         } else {
           if(!domain) {
@@ -307,8 +309,7 @@ The secret consists of two authentication methods:
             entries.push({ type: type[i] as "header" | "query", name: name[i]!, value: value[i]! });
           }
 
-          const encrypted = await encrypt(key, entries);
-          console.log(encrypted);
+          encrypted = await encrypt(key, entries);
         }
       }
     })
