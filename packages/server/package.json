@@ -5,6 +5,7 @@
   "scripts": {
     "deploy": "NODE_ENV=production alchemy deploy --stage prod",
     "destroy": "alchemy destroy --stage prod",
+    "db:generate": "drizzle-kit generate --dialect=sqlite --schema=./src/db/schema.ts --out=./migrations",
     "dev": "alchemy dev",
     "build:types": "tsdown"
   },
@@ -12,11 +13,13 @@
     "@cloudflare/workers-types": "^4.20250805.0",
     "@types/node": "^24.0.3",
     "alchemy": "0.93.7",
+    "drizzle-kit": "^0.31.10",
     "miniflare": "^4.20250617.3",
     "tsdown": "^0.22.0",
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "drizzle-orm": "^0.45.2",
     "hono": "^4.12.19"
   }
 }

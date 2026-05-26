@@ -1,8 +1,10 @@
 import { Hono } from "hono";
 import { auth } from "../auth-middleware";
 import { proxy as proxyFetch } from "hono/proxy";
-import { env } from "cloudflare:workers";
+import { env, waitUntil } from "cloudflare:workers";
 import { apiKeySchema } from "../schemas";
+import { drizzle } from "drizzle-orm/d1";
+import * as schema from "../db/schema";
 
 function hexToString(hexString: string) {
   const pairs = hexString.match(/.{1,2}/g);
@@ -68,18 +70,35 @@ export const proxy = new Hono()
       endpoint.searchParams.set(key, value);
     }
 
-    const req = new Request(endpoint, {
-      headers: decrypted.headers
-    });
+    const res = await proxyFetch(endpoint, { raw: c.req.raw });
 
-    const res = await proxyFetch(req);
     const payload = c.get("payload");
+
+    const db = drizzle(env.LOGS, { schema });
+
+    let client;
     if(payload.type === "jwt") {
       res.headers.set("GH-USER", payload.payload.user);
       res.headers.set("TOKEN-EXP", new Date(payload.payload.exp * 1000).toString());
+      client = payload.payload.user;
     } else {
       res.headers.set("DEPLOY-ID", payload.id);
+      client = payload.id;
     }
+
+    const bodySize = Number(c.req.header("content-length") || 0);
+
+    waitUntil(db.insert(schema.logs).values({
+      data: {
+        client,
+        endpoint: `${endpoint.host}${endpoint.pathname}`,
+        method: c.req.method,
+        status: res.status,
+        statusText: res.statusText,
+        bodySize,
+        params: c.req.queries()
+      }
+    }));
 
     return res;
   });

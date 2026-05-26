@@ -6,11 +6,6 @@ function parseUrl(input: string | URL | Request) {
   return new URL(input.url);
 }
 
-function extractHeaders(input: unknown) {
-  if(input instanceof Request) return input.headers;
-  return {}
-}
-
 function buildProxyUrl(baseUrl: URL, requestUrl: URL) {
   const proxyUrl = new URL(baseUrl);
   proxyUrl.pathname = `/proxy/${requestUrl.hostname}${requestUrl.pathname}`;
@@ -41,17 +36,35 @@ export function createCommonFetch(
     const token = await getAccessToken();
     const u = url(input);
 
-    const inputRequest = input instanceof Request ? input : undefined;
-
-    const req = new Request({
-      ...inputRequest,
-      url: u.href,
-      headers: {
-        ...extractHeaders(inputRequest),
-        ...init?.headers,
-        Authorization: `Bearer ${token}`
-      }
-    });
+    let req;
+    if(input instanceof Request) {
+      req = new Request(u.href, {
+        method: input.method,
+        headers: {
+          ...input.headers,
+          ...init?.headers,
+          Authorization: `Bearer ${token}`
+        },
+        body: input.body,
+        redirect: input.redirect,
+        credentials: input.credentials,
+        cache: input.cache,
+        mode: input.mode,
+        referrer: input.referrer,
+        referrerPolicy: input.referrerPolicy,
+        integrity: input.integrity,
+        keepalive: input.keepalive,
+        signal: input.signal
+      });
+    } else {
+      req = new Request(u.href, {
+        ...init,
+        headers: {
+          ...init?.headers,
+          Authorization: `Bearer ${token}`
+        }
+      });
+    }
 
     return await globalThis.fetch(req);
   }
