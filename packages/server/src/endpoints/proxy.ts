@@ -54,6 +54,12 @@ export const proxy = new Hono()
     const path = c.req.path.replace("/proxy/", "");
     const endpoint = new URL(`https://${path}`);
 
+    for(const [key, values] of Object.entries(c.req.queries())) {
+      for(const v of values) {
+        endpoint.searchParams.set(key, v);
+      }
+    }
+
     const apiProperties = await env.KV.get(`api:${endpoint.hostname}`);
 
     if(apiProperties == null) {
