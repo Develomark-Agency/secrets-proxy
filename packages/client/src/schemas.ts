@@ -15,6 +15,13 @@ export const tokenCredentialsSchema = z.object({
 
 export type TokenCredentials = z.output<typeof tokenCredentialsSchema>
 
+export const credentialsFileSchema = z.record(
+  z.string(),
+  tokenCredentialsSchema
+);
+
+export type CredentialsFile = z.output<typeof credentialsFileSchema>
+
 export const tokenSchema = z.object({
   exp: z.number().transform(x => new Date(x * 1000)),
   org: z.string(),
