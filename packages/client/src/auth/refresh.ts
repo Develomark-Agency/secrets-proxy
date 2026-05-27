@@ -20,5 +20,5 @@ export async function refresh() {
     accessToken: data.access_token,
     refreshToken: data.refresh_token,
     refreshExp: new Date(data.refresh_exp)
-  });
+  }, creds.dirKey);
 }
