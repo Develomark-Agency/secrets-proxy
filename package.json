@@ -19,5 +19,8 @@
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "scripts": {
+    "release:client": "bun run ./scripts/release-client.ts"
   }
 }
