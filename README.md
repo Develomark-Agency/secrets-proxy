@@ -27,6 +27,7 @@ Environment variables needed for server deployment are in [`.env.example`](https
 
 On the client side, the CLI must detect a `SECRETS_PROXY_HOSTNAME` in your environment. This can be done either with `SECRETS_PROXY_HOSTNAME='<hostname>' bunx secrets-proxy <command>`, or with an auto-loaded `.env` file.
 
+### Fetch
 To use the Secrets Proxy client in code, you must supply the hostname and a function to get the access token:
 ```ts
 import { createCommonFetch } from "@secrets-proxy/client/fetch";
@@ -41,3 +42,15 @@ const res = await fetch("https://external-api.com/get-resource?id=123");
 // transformed to `https://proxy.example.com/proxy/external-api.com/get-resource?id=123`
 // automatically attaches `Authorization Bearer <...>` from credentials
 ```
+
+### Key Registry
+External API keys are registered in the deployed KV store in Cloudflare. They are keyed by `api:<domain>`, and their values is an encrypted representation of the appropriate headers and query parameter keys.
+
+To encrypt an API key, you can use the `encrypt` command in the CLI with `bunx secrets-proxy encrypt`, using the options:
+- `--domain` (`-d`) The domain to match against when using this key
+- `--type` (`-t`) The source of authentication (URL query parameter or request header)
+- `--name` (`-n`) The header or query parameter name
+- `--value` (`-v`) The value of the key
+- `--key` (`-k`) Encryption key. Must be the same as the encryption key used in the deployed secrets proxy (`API_SECRET`).
+
+You can also run `bunx secrets-proxy encrypt --interactive` to go through an interactive flow.
