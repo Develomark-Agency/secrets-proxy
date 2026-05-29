@@ -16,10 +16,11 @@ function buildProxyUrl(baseUrl: URL, requestUrl: URL) {
 }
 
 export function createCommonFetch(
-  hostname: string,
+  hostname: string | (() => string),
   getAccessToken: () => Promise<string>
 ) {
-  const rpcClient = client(hostname)
+  const host = typeof hostname === "string" ? hostname : hostname();
+  const rpcClient = client(host);
 
   function url(input: string | URL | Request) {
     const baseUrl = rpcClient.proxy["*"].$url();
