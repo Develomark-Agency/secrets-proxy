@@ -19,11 +19,13 @@ export function createCommonFetch(
   hostname: string | (() => string),
   getAccessToken: () => Promise<string>
 ) {
-  const host = typeof hostname === "string" ? hostname : hostname();
-  const rpcClient = client(host);
+  function rpcClient() {
+    const host = typeof hostname === "string" ? hostname : hostname();
+    return client(host);
+  }
 
   function url(input: string | URL | Request) {
-    const baseUrl = rpcClient.proxy["*"].$url();
+    const baseUrl = rpcClient().proxy["*"].$url();
     const requestUrl = parseUrl(input);
     const proxyUrl = buildProxyUrl(baseUrl, requestUrl);
 
