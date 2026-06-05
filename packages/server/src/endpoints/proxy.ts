@@ -76,19 +76,41 @@ export const proxy = new Hono()
       endpoint.searchParams.set(key, value);
     }
 
-    const res = await proxyFetch(endpoint, { raw: c.req.raw });
+    const proxyHeaders = new Headers(c.req.header());
+    
+    for(const [key, value] of Object.entries(decrypted.headers)) {
+      proxyHeaders.set(key, value);
+    }
+
+    const proxyReq = new Request(endpoint, {
+      headers: proxyHeaders,
+      body: c.req.raw.body,
+      signal: c.req.raw.signal,
+      method: c.req.raw.method,
+      mode: c.req.raw.mode,
+      credentials: c.req.raw.credentials,
+      referrerPolicy: c.req.raw.referrerPolicy,
+      referrer: c.req.raw.referrer,
+      redirect: c.req.raw.redirect,
+      cache: c.req.raw.cache,
+      integrity: c.req.raw.integrity,
+      keepalive: c.req.raw.keepalive
+    });
+
+    const res = await fetch(proxyReq);
 
     const payload = c.get("payload");
 
     const db = drizzle(env.LOGS, { schema });
-
+    
     let client;
+    const resHeaders = new Headers(res.headers);
     if(payload.type === "jwt") {
-      res.headers.set("GH-USER", payload.payload.user);
-      res.headers.set("TOKEN-EXP", new Date(payload.payload.exp * 1000).toString());
+      resHeaders.set("GH-USER", payload.payload.user);
+      resHeaders.set("TOKEN-EXP", new Date(payload.payload.exp * 1000).toString());
       client = payload.payload.user;
     } else {
-      res.headers.set("DEPLOY-ID", payload.id);
+      resHeaders.set("DEPLOY-ID", payload.id);
       client = payload.id;
     }
 
@@ -106,5 +128,9 @@ export const proxy = new Hono()
       }
     }));
 
-    return res;
+    return new Response(res.body, {
+      status: res.status,
+      statusText: res.statusText,
+      headers: resHeaders
+    });
   });
