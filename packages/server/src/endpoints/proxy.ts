@@ -77,6 +77,7 @@ export const proxy = new Hono()
     }
 
     const proxyHeaders = new Headers(c.req.header());
+    proxyHeaders.delete("Authorization");
     
     for(const [key, value] of Object.entries(decrypted.headers)) {
       proxyHeaders.set(key, value);
