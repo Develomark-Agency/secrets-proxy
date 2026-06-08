@@ -65,10 +65,10 @@ export async function loadCredentials() {
       ...payload,
       ...credentials,
       get isExpired() {
-        return payload.exp.getTime() < Date.now() - 1000 * 30;
+        return Date.now() > payload.exp.getTime() - 1000 * 30;
       },
       get refreshExpired() {
-        return credentials.refreshExp.getTime() < Date.now() - 1000 * 30;
+        return Date.now() > credentials.refreshExp.getTime() - 1000 * 30;
       },
     };
   } catch {

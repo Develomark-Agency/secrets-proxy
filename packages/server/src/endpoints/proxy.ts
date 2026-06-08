@@ -1,6 +1,5 @@
 import { Hono } from "hono";
 import { auth } from "../auth-middleware";
-import { proxy as proxyFetch } from "hono/proxy";
 import { env, waitUntil } from "cloudflare:workers";
 import { apiKeySchema } from "../schemas";
 import { drizzle } from "drizzle-orm/d1";
@@ -48,6 +47,20 @@ async function decryptApiProperties(apiProperties: string) {
   }
 }
 
+async function matchEndpoint(endpoint: URL) {
+  const apiProperties = await env.KV.list({ prefix: `api:${endpoint.hostname}` });
+
+  const sortedByLength = apiProperties.keys.toSorted((a, b) => b.name.length - a.name.length);
+  
+  for(const key of sortedByLength) {
+    if(`${endpoint.hostname}${endpoint.pathname}`.startsWith(key.name.slice("api:".length))) {
+      const value = await env.KV.get(key.name);
+
+      return value;
+    }
+  }
+}
+
 export const proxy = new Hono()
   .use(auth)
   .all("/*", async c => {
@@ -60,7 +73,7 @@ export const proxy = new Hono()
       }
     }
 
-    const apiProperties = await env.KV.get(`api:${endpoint.hostname}`);
+    const apiProperties = await matchEndpoint(endpoint);
 
     if(apiProperties == null) {
       return c.text(`Invalid API hostname: ${path}`, 400);
