@@ -33,19 +33,19 @@ export async function saveCredentials(
 
   let entries: Record<string, TokenCredentials> = {};
   try {
-    const raw = await Bun.file(credentialsPath).json();
+    const raw = JSON.parse(await fs.promises.readFile(credentialsPath, "utf-8"));
     entries = credentialsFileSchema.parse(raw);
   } catch {}
 
   entries[dirKey ?? process.cwd()] = credentials;
 
-  await Bun.file(credentialsPath).write(JSON.stringify(entries, null, 2));
+  await fs.promises.writeFile(credentialsPath, JSON.stringify(entries, null, 2), "utf-8");
 }
 
 export async function loadCredentials() {
   try {
     await fs.promises.mkdir(configPath, { recursive: true });
-    const raw = await Bun.file(credentialsPath).json();
+    const raw = JSON.parse(await fs.promises.readFile(credentialsPath, "utf-8"));
     const entries = credentialsFileSchema.parse(raw);
 
     const match = findBestMatch(entries, process.cwd());
@@ -73,7 +73,7 @@ export async function loadCredentials() {
     };
   } catch {
     try {
-      await Bun.file(credentialsPath).delete();
+      await fs.promises.unlink(credentialsPath);
     } catch {}
     return null;
   }
