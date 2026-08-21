@@ -12,6 +12,7 @@ async function getVersions() {
 
 async function pack() {
   await $`cd packages/server && bun run build:types`;
+  await $`cd packages/client && bun run build`;
   await $`cd packages/client && bun pm pack`.quiet();
   const p = `./packages/client/secrets-proxy-client-${packageJson.version}.tgz`;
   const release = Bun.file(p);

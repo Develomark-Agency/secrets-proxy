@@ -1,6 +1,13 @@
 {
   "name": "@secrets-proxy/client",
-  "module": "index.ts",
+  "module": "./dist/fetch.mjs",
+  "types": "./dist/fetch.d.mts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsdown"
+  },
   "dependencies": {
     "@hono/node-server": "^2.0.3",
     "@hono/standard-validator": "^0.2.2",
@@ -20,13 +27,22 @@
     "typescript": "^5"
   },
   "exports": {
-    "./auth": "./src/auth/index.ts",
-    "./fetch": "./src/fetch.ts"
+    "./auth": {
+      "types": "./dist/auth/index.d.mts",
+      "import": "./dist/auth/index.mjs"
+    },
+    "./fetch": {
+      "types": "./dist/fetch.d.mts",
+      "import": "./dist/fetch.mjs"
+    }
   },
   "bin": {
-    "secrets-proxy": "./src/cli.ts"
+    "secrets-proxy": "./dist/cli.mjs"
   },
   "private": true,
-  "version": "0.1.6",
-  "type": "module"
+  "version": "0.2.0",
+  "type": "module",
+  "devDependencies": {
+    "tsdown": "^0.22.0"
+  }
 }

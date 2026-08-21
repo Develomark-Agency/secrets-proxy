@@ -17,7 +17,10 @@ function buildProxyUrl(baseUrl: URL, requestUrl: URL) {
 
 export function createCommonFetch(
   hostname: string | (() => string),
-  getAccessToken: () => Promise<string>
+  getAuth: () => Promise<
+    | { scheme: "bearer", token: string }
+    | { scheme: "basic", username: string, password: string }
+  >
 ) {
   function rpcClient() {
     const host = typeof hostname === "string" ? hostname : hostname();
@@ -36,7 +39,10 @@ export function createCommonFetch(
     input: string | URL | Request,
     init?: RequestInit
   ) {
-    const token = await getAccessToken();
+    const auth = await getAuth();
+    const Authorization = auth.scheme === "bearer"
+      ? `Bearer ${auth.token}`
+      : `Basic ${Buffer.from(`${auth.username}:${auth.password}`, "utf-8").toString("base64")}`;
     const u = url(input);
 
     let req;
@@ -46,7 +52,7 @@ export function createCommonFetch(
         headers: {
           ...input.headers,
           ...init?.headers,
-          Authorization: `Bearer ${token}`
+          Authorization
         },
         body: input.body,
         redirect: input.redirect,
@@ -64,7 +70,7 @@ export function createCommonFetch(
         ...init,
         headers: {
           ...init?.headers,
-          Authorization: `Bearer ${token}`
+          Authorization
         }
       });
     }
