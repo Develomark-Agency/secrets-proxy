@@ -20,7 +20,10 @@ export function createCommonFetch(
   getAuth: () => Promise<
     | { scheme: "bearer", token: string }
     | { scheme: "basic", username: string, password: string }
-  >
+  >,
+  options?: {
+    fetch?: (request: Request) => Promise<Response>
+  }
 ) {
   function rpcClient() {
     const host = typeof hostname === "string" ? hostname : hostname();
@@ -75,7 +78,7 @@ export function createCommonFetch(
       });
     }
 
-    return await globalThis.fetch(req);
+    return await (options?.fetch ?? globalThis.fetch)(req);
   }
 
   return {
