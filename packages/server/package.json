@@ -7,7 +7,8 @@
     "destroy": "alchemy destroy --stage prod",
     "db:generate": "drizzle-kit generate --dialect=sqlite --schema=./src/db/schema.ts --out=./migrations",
     "dev": "alchemy dev",
-    "build:types": "tsdown"
+    "build:types": "tsdown",
+    "test": "bun test"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20250805.0",

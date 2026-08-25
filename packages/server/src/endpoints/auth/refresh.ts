@@ -18,7 +18,7 @@ export const refresh = new Hono()
       return c.text("Invalid or expired refresh token", { status: 401, statusText: "Unauthorized" });
     }
 
-    const sessionRaw = await decryptSession(sessionEncrypted, env.API_SECRET);
+    const sessionRaw = await decryptSession(sessionEncrypted, env.SIGNING_SECRET);
     const sessionParsed = sessionSchema.safeParse(sessionRaw);
 
     if(!sessionParsed.success) {
@@ -40,7 +40,7 @@ export const refresh = new Hono()
     
     const tokenPayload = createTokenPayload(sessionParsed.data.username);
     
-    const newInternalToken = await sign(tokenPayload, env.API_SECRET, "HS256");
+    const newInternalToken = await sign(tokenPayload, env.SIGNING_SECRET, "HS256");
 
     const sessionData = {
       username: sessionParsed.data.username,
@@ -48,7 +48,7 @@ export const refresh = new Hono()
     }
 
     const newRefreshToken = crypto.randomUUID();
-    const encryptedSessionData = await encryptSession(sessionData, env.API_SECRET);
+    const encryptedSessionData = await encryptSession(sessionData, env.SIGNING_SECRET);
 
     const refreshExp = new Date(Date.now() + LIFETIME.REFRESH_TOKEN * 1000);
 

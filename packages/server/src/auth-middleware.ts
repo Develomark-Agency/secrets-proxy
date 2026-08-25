@@ -10,7 +10,8 @@ interface Env {
   Variables: {
     payload: {
       type: "deploy-key",
-      id: string
+      id: string,
+      environment: "development" | "production"
     } | {
       type: "jwt",
       payload: z.output<typeof payloadSchema>
@@ -30,15 +31,22 @@ export const auth = createMiddleware<Env>(async (c, next) => {
 
   if(basic) {
     if(basic.username.trim() === "") return c.text("Username required", 400);
-    const isEqual = await timingSafeEqual(env.API_SECRET, basic.password);
-    if(!isEqual) return c.text("Unauthorized", 401);
+    const [usesDevelopmentKey, usesProductionKey] = await Promise.all([
+      timingSafeEqual(env.DEPLOY_DEVELOPMENT_SECRET, basic.password),
+      timingSafeEqual(env.DEPLOY_PRODUCTION_SECRET, basic.password)
+    ]);
+    if(!usesDevelopmentKey && !usesProductionKey) return c.text("Unauthorized", 401);
 
-    c.set("payload", { type: "deploy-key", id: basic.username });
+    c.set("payload", {
+      type: "deploy-key",
+      id: basic.username,
+      environment: usesProductionKey ? "production" : "development",
+    });
 
     return await next();
   } else if(bearer) {
     try {
-      const result = await verify(bearer, env.API_SECRET, "HS256");
+      const result = await verify(bearer, env.SIGNING_SECRET, "HS256");
       c.set("payload", { type: "jwt", payload: result as z.output<typeof payloadSchema> });
       return await next();
     } catch(e) {}

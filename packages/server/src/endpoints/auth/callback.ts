@@ -41,7 +41,7 @@ export const callback = new Hono()
 
     const tokenPayload = createTokenPayload(user.login);
 
-    const internalToken = await sign(tokenPayload, env.API_SECRET, "HS256");
+    const internalToken = await sign(tokenPayload, env.SIGNING_SECRET, "HS256");
 
     const refreshToken = crypto.randomUUID();
 
@@ -50,7 +50,7 @@ export const callback = new Hono()
       githubToken
     }
 
-    const encryptedSessionData = await encryptSession(sessionData, env.API_SECRET);
+    const encryptedSessionData = await encryptSession(sessionData, env.SIGNING_SECRET);
 
     const refreshExp = new Date(Date.now() + LIFETIME.REFRESH_TOKEN * 1000);
 

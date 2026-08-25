@@ -9,9 +9,14 @@ const env = z.object({
   GITHUB_ORG_ID: z.string(),
   GITHUB_CLIENT_ID: z.string(),
   GITHUB_CLIENT_SECRET: z.string(),
-  API_SECRET: z.string(),
+  SIGNING_SECRET: z.string(),
+  DEPLOY_DEVELOPMENT_SECRET: z.string(),
+  DEPLOY_PRODUCTION_SECRET: z.string(),
   NODE_ENV: z.enum(["development", "production"]).optional().default("development")
-}).parse(process.env);
+}).refine(
+  value => value.DEPLOY_DEVELOPMENT_SECRET !== value.DEPLOY_PRODUCTION_SECRET,
+  { message: "Development and production deploy secrets must be different" },
+).parse(process.env);
 
 const app = await alchemy("secrets-proxy", {
   stateStore: env.NODE_ENV === "production"
@@ -32,7 +37,9 @@ export const worker = await Worker("worker", {
     KV,
     LOGS,
     STATE_SECRET: STATE_SECRET.value,
-    API_SECRET: alchemy.secret(env.API_SECRET),
+    SIGNING_SECRET: alchemy.secret(env.SIGNING_SECRET),
+    DEPLOY_DEVELOPMENT_SECRET: alchemy.secret(env.DEPLOY_DEVELOPMENT_SECRET),
+    DEPLOY_PRODUCTION_SECRET: alchemy.secret(env.DEPLOY_PRODUCTION_SECRET),
     GITHUB_ORG_ID: env.GITHUB_ORG_ID,
     GITHUB_CLIENT_ID: env.GITHUB_CLIENT_ID,
     GITHUB_CLIENT_SECRET: alchemy.secret(env.GITHUB_CLIENT_SECRET)

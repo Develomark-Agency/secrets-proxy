@@ -134,6 +134,12 @@ The secret consists of two authentication methods:
           description: "The domain to match against when using this key",
           type: optional(string)
         }),
+        environment: option({
+          long: "environment",
+          short: "e",
+          description: "The environment that uses this secret (defaults to production)",
+          type: optional(oneOf(["production", "development"])),
+        }),
         type: multioption({
           long: "type",
           short: "t",
@@ -157,7 +163,7 @@ The secret consists of two authentication methods:
           short: "k",
           description: "Encryption key. Must be the same as the encryption key used in the deployed secrets proxy.",
           type: optional(string),
-          defaultValue: () => process.env.API_SECRET
+          defaultValue: () => process.env.SIGNING_SECRET
         })
       },
       async handler(args) {
@@ -208,6 +214,7 @@ The secret consists of two authentication methods:
         async function getValuesInteractive(supplied: typeof args) {
           let domain = supplied.domain;
           let key = supplied.key;
+          let environment = supplied.environment;
           const entries: Array<{ type: "header" | "query"; name: string; value: string }> = [];
 
           const suppliedTypes = supplied.type ?? [];
@@ -239,6 +246,16 @@ The secret consists of two authentication methods:
             console.error("Key cannot be empty");
           }
 
+          if(!environment) {
+            environment = await select<"production" | "development">({
+              message: "Choose the environment that uses this secret",
+              choices: [
+                { name: "Production", value: "production", description: "Use in production deployments" },
+                { name: "Development", value: "development", description: "Use for developer and preview requests" },
+              ],
+            });
+          }
+
           do {
             const selectedType = await select<"header" | "query">({
               message: `Enter the API authorization type for entry ${entries.length + 1}`,
@@ -263,14 +280,21 @@ The secret consists of two authentication methods:
             if(!addAnother) break;
           } while(true);
 
-          return { domain: domain!, key: key!, entries };
+          return {
+            domain: domain!,
+            key: key!,
+            environment,
+            entries,
+          };
         }
 
         let domain;
+        let environment = args.environment ?? "production";
         let encrypted;
         if(args.interactive) {
           const collected = await getValuesInteractive(args);
           domain = collected.domain;
+          environment = collected.environment;
           encrypted = await encrypt(collected.key, collected.entries);
         } else {
           const { type, name, value, key } = args;
@@ -313,8 +337,12 @@ The secret consists of two authentication methods:
           encrypted = await encrypt(key, entries);
         }
 
+        const registryKey = environment === "development"
+          ? `api:development:${domain}`
+          : `api:${domain}`;
+
         console.log(style.bold.blue`Enter this key into the secrets proxy KV store`);
-        console.log(`│ ${style.yellow`key:  `} api:${domain}`);
+        console.log(`│ ${style.yellow`key:  `} ${registryKey}`);
         console.log(`│ ${style.yellow`value:`} ${encrypted}`);
       }
     })

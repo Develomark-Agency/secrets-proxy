@@ -23,7 +23,9 @@ Cloudflare Worker using Hono:
 ## Usage
 
 ### Environment variables
-Environment variables needed for server deployment are in [`.env.example`](https://github.com/Develomark-Agency/secrets-proxy/blob/main/packages/server/.env.example). The `API_SECRET`, `ALCHEMY_PASSWORD`, and `ALCHEMY_STATE_TOKEN` must be provided. It is recommended that they are generated with `openssl`. If you already have an `ALCHEMY_STATE_TOKEN` for a Cloudflare State Store in your Cloudflare account, you must use that. The `GITHUB_ORG_ID` is the ID of the organization (such as `Develomark-Agency`) that you want to ensure users belong to.
+Environment variables needed for server deployment are in [`.env.example`](https://github.com/Develomark-Agency/secrets-proxy/blob/main/packages/server/.env.example). The `SIGNING_SECRET`, `DEPLOY_DEVELOPMENT_SECRET`, `DEPLOY_PRODUCTION_SECRET`, `ALCHEMY_PASSWORD`, and `ALCHEMY_STATE_TOKEN` must be provided. Generate each secret separately with `openssl`. If you already have an `ALCHEMY_STATE_TOKEN` for a Cloudflare State Store in your Cloudflare account, you must use that. The `GITHUB_ORG_ID` is the ID of the organization (such as `Develomark-Agency`) that you want to ensure users belong to.
+
+`SIGNING_SECRET` signs developer JWTs and encrypts stored sessions and API credentials. When upgrading from a deployment that used `API_SECRET`, set `SIGNING_SECRET` to the old `API_SECRET` value so existing encrypted data and sessions remain valid. Deploy clients should receive only `DEPLOY_DEVELOPMENT_SECRET` or `DEPLOY_PRODUCTION_SECRET`, never `SIGNING_SECRET`.
 
 On the client side, the CLI must detect a `SECRETS_PROXY_HOSTNAME` in your environment. This can be done either with `SECRETS_PROXY_HOSTNAME='<hostname>' bunx secrets-proxy <command>`, or with an auto-loaded `.env` file.
 
@@ -48,9 +50,19 @@ External API keys are registered in the deployed KV store in Cloudflare. They ar
 
 To encrypt an API key, you can use the `encrypt` command in the CLI with `bunx secrets-proxy encrypt`, using the options:
 - `--domain` (`-d`) The domain to match against when using this key
+- `--environment` (`-e`) The environment that uses this secret: `production` (the default) or `development`
 - `--type` (`-t`) The source of authentication (URL query parameter or request header)
 - `--name` (`-n`) The header or query parameter name
 - `--value` (`-v`) The value of the key
-- `--key` (`-k`) Encryption key. Must be the same as the encryption key used in the deployed secrets proxy (`API_SECRET`).
+- `--key` (`-k`) Encryption key. Must be the same as the deployed proxy's `SIGNING_SECRET`.
 
 You can also run `bunx secrets-proxy encrypt --interactive` to go through an interactive flow.
+
+Production secrets use the existing `api:<domain>` key format. Development overrides use `api:development:<domain>`. GitHub-authenticated requests always use development credentials. Deploy-key requests use the environment bound to the verified deploy secret. If no development override exists, development requests fall back to the production credential so existing entries keep working.
+
+For example, Clerk development and production credentials can share the same upstream hostname:
+
+```sh
+bunx secrets-proxy encrypt -d api.clerk.com -e production -t header -n Authorization -v "Bearer sk_live_..."
+bunx secrets-proxy encrypt -d api.clerk.com -e development -t header -n Authorization -v "Bearer sk_test_..."
+```
