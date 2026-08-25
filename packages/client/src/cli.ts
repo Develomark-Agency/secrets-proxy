@@ -10,8 +10,6 @@ import { login } from "./auth/login";
 import getPort from "get-port";
 import { client } from "./rpc-client";
 import { command, option, string, subcommands, oneOf, run, optional, flag, multioption, array } from "cmd-ts";
-import { existsSync } from "node:fs";
-import { rename, unlink, writeFile } from "node:fs/promises";
 import { Buffer } from "node:buffer";
 
 dayjs.extend(relativeTime);
@@ -23,18 +21,6 @@ function formatDotenv(variables: Record<string, string>) {
     .toSorted(([a], [b]) => a.localeCompare(b))
     .map(([name, value]) => `${name}=${JSON.stringify(value)}`)
     .join("\n") + "\n";
-}
-
-async function replaceFile(path: string, contents: string) {
-  const temporaryPath = `${path}.${process.pid}.${crypto.randomUUID()}.tmp`;
-
-  try {
-    await writeFile(temporaryPath, contents, { flag: "wx" });
-    await rename(temporaryPath, path);
-  } catch(error) {
-    await unlink(temporaryPath).catch(() => {});
-    throw error;
-  }
 }
 
 const main = subcommands({
@@ -127,20 +113,7 @@ const main = subcommands({
     sync: command({
       name: "sync",
       description: "Sync environment variables from the secrets proxy",
-      args: {
-        output: option({
-          long: "output",
-          short: "o",
-          description: "The dotenv file to write",
-          type: string,
-          defaultValue: () => ".env"
-        }),
-        force: flag({
-          long: "force",
-          short: "f",
-          description: "Replace the output file if it already exists"
-        })
-      },
+      args: {},
       async handler(args) {
         const deployId = process.env.SECRETS_PROXY_DEPLOY_ID;
         const deploySecret = process.env.SECRETS_PROXY_DEPLOY_SECRET;
@@ -164,17 +137,7 @@ const main = subcommands({
         }
 
         const { variables } = await res.json();
-        if(existsSync(args.output) && !args.force) {
-          console.error(`${style.bold.red`error:`} ${args.output} already exists. Run again with --force to replace it.`);
-          return;
-        }
-
-        try {
-          await replaceFile(args.output, formatDotenv(variables));
-          console.log(`${style.green`✔`} Synced ${Object.keys(variables).length} environment variables to ${args.output}`);
-        } catch(error) {
-          console.error(`${style.bold.red`error:`} Failed to write ${args.output}`);
-        }
+        process.stdout.write(formatDotenv(variables));
       }
     }),
     encrypt: command({
