@@ -66,3 +66,25 @@ For example, Clerk development and production credentials can share the same ups
 bunx secrets-proxy encrypt -d api.clerk.com -e production -t header -n Authorization -v "Bearer sk_live_..."
 bunx secrets-proxy encrypt -d api.clerk.com -e development -t header -n Authorization -v "Bearer sk_test_..."
 ```
+
+### Environment configuration sync
+
+Non-secret environment configuration can be kept in the same KV namespace. Use the key format `env:<environment>:<name>`:
+
+```text
+env:development:USE_SOME_FEATURE = true
+env:development:VITE_PUBLIC_KEY = pk_123abc
+env:production:USE_SOME_FEATURE = false
+```
+
+Run `bunx secrets-proxy sync` to write the variables for your signed-in developer account to `.env`. GitHub-authenticated developers always receive the development variables. The command will not replace an existing file unless you pass `--force`; choose another file with `--output path/to/file`.
+
+CI can use a deploy key instead of a GitHub login. The verified deploy key selects either the development or production variables:
+
+```sh
+SECRETS_PROXY_DEPLOY_ID=my-app-build \
+SECRETS_PROXY_DEPLOY_SECRET="$DEPLOY_PRODUCTION_SECRET" \
+bunx secrets-proxy sync --force
+```
+
+Only store configuration that is safe to place in the generated dotenv file under `env:`. Do not store proxy credentials or other secrets there.

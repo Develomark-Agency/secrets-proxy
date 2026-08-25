@@ -150,6 +150,24 @@ declare const app: import("hono/hono-base").HonoBase<import("hono/types").BlankE
     };
   };
 }, "/ping"> | import("hono/types").MergeSchemaPath<{
+  "/": {
+    $get: {
+      input: {};
+      output: `Invalid environment variable name in KV: ${any}`;
+      outputFormat: "text";
+      status: 500;
+    } | {
+      input: {};
+      output: {
+        variables: {
+          [x: string]: string;
+        };
+      };
+      outputFormat: "json";
+      status: import("hono/utils/http-status").ContentfulStatusCode;
+    };
+  };
+}, "/env"> | import("hono/types").MergeSchemaPath<{
   "/*": {
     $all: {
       input: {};

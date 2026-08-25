@@ -5,12 +5,14 @@ import { callback } from "./endpoints/auth/callback";
 import { refresh } from "./endpoints/auth/refresh";
 import { ping } from "./endpoints/auth/ping";
 import { proxy } from "./endpoints/proxy";
+import { environment } from "./endpoints/env";
 
 const app = new Hono()
   .route("/login", login)
   .route("/callback", callback)
   .route("/refresh", refresh)
   .route("/ping", ping)
+  .route("/env", environment)
   .route("/proxy", proxy);
 
 export default app;

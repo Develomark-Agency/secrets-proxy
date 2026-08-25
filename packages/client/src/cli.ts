@@ -10,10 +10,32 @@ import { login } from "./auth/login";
 import getPort from "get-port";
 import { client } from "./rpc-client";
 import { command, option, string, subcommands, oneOf, run, optional, flag, multioption, array } from "cmd-ts";
+import { existsSync } from "node:fs";
+import { rename, unlink, writeFile } from "node:fs/promises";
+import { Buffer } from "node:buffer";
 
 dayjs.extend(relativeTime);
 
 const rpcClient = client();
+
+function formatDotenv(variables: Record<string, string>) {
+  return Object.entries(variables)
+    .toSorted(([a], [b]) => a.localeCompare(b))
+    .map(([name, value]) => `${name}=${JSON.stringify(value)}`)
+    .join("\n") + "\n";
+}
+
+async function replaceFile(path: string, contents: string) {
+  const temporaryPath = `${path}.${process.pid}.${crypto.randomUUID()}.tmp`;
+
+  try {
+    await writeFile(temporaryPath, contents, { flag: "wx" });
+    await rename(temporaryPath, path);
+  } catch(error) {
+    await unlink(temporaryPath).catch(() => {});
+    throw error;
+  }
+}
 
 const main = subcommands({
   name: "secrets-proxy",
@@ -100,6 +122,59 @@ const main = subcommands({
         });
 
         console.log(res.status, res.statusText, "-", await res.text());
+      }
+    }),
+    sync: command({
+      name: "sync",
+      description: "Sync environment variables from the secrets proxy",
+      args: {
+        output: option({
+          long: "output",
+          short: "o",
+          description: "The dotenv file to write",
+          type: string,
+          defaultValue: () => ".env"
+        }),
+        force: flag({
+          long: "force",
+          short: "f",
+          description: "Replace the output file if it already exists"
+        })
+      },
+      async handler(args) {
+        const deployId = process.env.SECRETS_PROXY_DEPLOY_ID;
+        const deploySecret = process.env.SECRETS_PROXY_DEPLOY_SECRET;
+        const hasDeployCredentials = Boolean(deployId || deploySecret);
+
+        if(hasDeployCredentials && (!deployId || !deploySecret)) {
+          console.error(`${style.bold.red`error:`} Both SECRETS_PROXY_DEPLOY_ID and SECRETS_PROXY_DEPLOY_SECRET are required for deploy-key authentication`);
+          return;
+        }
+
+        const authorization = hasDeployCredentials
+          ? `Basic ${Buffer.from(`${deployId}:${deploySecret}`).toString("base64")}`
+          : `Bearer ${(await loadCredentialsWithAutoRefresh()).accessToken}`;
+        const res = await rpcClient.env.$get({}, {
+          headers: { Authorization: authorization }
+        });
+
+        if(!res.ok) {
+          console.error(`${style.bold.red`error:`} Failed to sync environment variables: ${res.status} ${res.statusText}`);
+          return;
+        }
+
+        const { variables } = await res.json();
+        if(existsSync(args.output) && !args.force) {
+          console.error(`${style.bold.red`error:`} ${args.output} already exists. Run again with --force to replace it.`);
+          return;
+        }
+
+        try {
+          await replaceFile(args.output, formatDotenv(variables));
+          console.log(`${style.green`✔`} Synced ${Object.keys(variables).length} environment variables to ${args.output}`);
+        } catch(error) {
+          console.error(`${style.bold.red`error:`} Failed to write ${args.output}`);
+        }
       }
     }),
     encrypt: command({
