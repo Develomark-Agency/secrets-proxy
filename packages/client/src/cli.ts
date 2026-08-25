@@ -125,10 +125,11 @@ const main = subcommands({
         }
 
         const authorization = hasDeployCredentials
-          ? `Basic ${Buffer.from(`${deployId}:${deploySecret}`).toString("base64")}`
-          : `Bearer ${(await loadCredentialsWithAutoRefresh()).accessToken}`;
+          ? Buffer.from(`${deployId}:${deploySecret}`).toString("base64")
+          : (await loadCredentialsWithAutoRefresh()).accessToken;
+        
         const res = await rpcClient.env.$get({}, {
-          headers: { Authorization: authorization }
+          headers: { Authorization: `Bearer ${authorization}` }
         });
 
         if(!res.ok) {

@@ -6,7 +6,7 @@ A secure proxy server that forwards authenticated requests to third-party APIs w
 
 ### Server
 Cloudflare Worker using Hono:
-- Authenticates requests via GitHub OAuth (JWT) or deploy keys (Basic Auth).
+- Authenticates requests via Bearer tokens containing either a GitHub OAuth JWT or encoded deploy credentials.
   - Gates users based on GitHub organization
 - Decrypts API credentials from Cloudflare KV
   - Attaches credentials as headers or query params
@@ -27,6 +27,8 @@ Environment variables needed for server deployment are in [`.env.example`](https
 
 `SIGNING_SECRET` signs developer JWTs and encrypts stored sessions and API credentials. When upgrading from a deployment that used `API_SECRET`, set `SIGNING_SECRET` to the old `API_SECRET` value so existing encrypted data and sessions remain valid. Deploy clients should receive only `DEPLOY_DEVELOPMENT_SECRET` or `DEPLOY_PRODUCTION_SECRET`, never `SIGNING_SECRET`.
 
+All proxy requests use Bearer authentication. Developer clients send their JWT as the token. Deploy clients send `base64(deployId + ":" + deploySecret)` as the token.
+
 On the client side, the CLI must detect a `SECRETS_PROXY_HOSTNAME` in your environment. This can be done either with `SECRETS_PROXY_HOSTNAME='<hostname>' bunx secrets-proxy <command>`, or with an auto-loaded `.env` file.
 
 ### Fetch
@@ -37,7 +39,10 @@ import { loadCredentialsWithAutoRefresh } from "@secrets-proxy/client/auth";
 
 const { fetch } = createCommonFetch(
   "proxy.example.com",
-  () => loadCredentialsWithAutoRefresh().then(c => c.accessToken)
+  () => loadCredentialsWithAutoRefresh().then(c => ({
+    mode: "development" as const,
+    token: c.accessToken
+  }))
 );
 
 const res = await fetch("https://external-api.com/get-resource?id=123");

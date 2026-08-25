@@ -15,12 +15,13 @@ function buildProxyUrl(baseUrl: URL, requestUrl: URL) {
   return proxyUrl;
 }
 
+export type ProxyAuthentication =
+  | { mode: "developer", token: string }
+  | { mode: "deploy-key", deployId: string, key: string };
+
 export function createCommonFetch(
   hostname: string | (() => string),
-  getAuth: () => Promise<
-    | { scheme: "bearer", token: string }
-    | { scheme: "basic", username: string, password: string }
-  >,
+  getAuth: () => Promise<ProxyAuthentication>,
   options?: {
     fetch?: (request: Request) => Promise<Response>
   }
@@ -43,9 +44,10 @@ export function createCommonFetch(
     init?: RequestInit
   ) {
     const auth = await getAuth();
-    const Authorization = auth.scheme === "bearer"
-      ? `Bearer ${auth.token}`
-      : `Basic ${Buffer.from(`${auth.username}:${auth.password}`, "utf-8").toString("base64")}`;
+    const authorization = auth.mode === "developer"
+      ? auth.token
+      : Buffer.from(`${auth.deployId}:${auth.key}`, "utf-8").toString("base64");
+
     const u = url(input);
 
     let req;
@@ -55,7 +57,7 @@ export function createCommonFetch(
         headers: {
           ...input.headers,
           ...init?.headers,
-          Authorization
+          Authorization: `Bearer ${authorization}`
         },
         body: input.body,
         redirect: input.redirect,
@@ -73,7 +75,7 @@ export function createCommonFetch(
         ...init,
         headers: {
           ...init?.headers,
-          Authorization
+          Authorization: `Bearer ${authorization}`
         }
       });
     }
