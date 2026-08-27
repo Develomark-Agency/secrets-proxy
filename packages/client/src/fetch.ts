@@ -49,16 +49,21 @@ export function createCommonFetch(
       : Buffer.from(`${auth.deployId}:${auth.key}`, "utf-8").toString("base64");
 
     const u = url(input);
+    const headers = new Headers(input instanceof Request ? input.headers : undefined);
+
+    if(init?.headers) {
+      new Headers(init.headers).forEach((value, key) => {
+        headers.set(key, value);
+      });
+    }
+
+    headers.set("Authorization", `Bearer ${authorization}`);
 
     let req;
     if(input instanceof Request) {
       req = new Request(u.href, {
         method: input.method,
-        headers: {
-          ...input.headers,
-          ...init?.headers,
-          Authorization: `Bearer ${authorization}`
-        },
+        headers,
         body: input.body,
         redirect: input.redirect,
         credentials: input.credentials,
@@ -73,10 +78,7 @@ export function createCommonFetch(
     } else {
       req = new Request(u.href, {
         ...init,
-        headers: {
-          ...init?.headers,
-          Authorization: `Bearer ${authorization}`
-        }
+        headers
       });
     }
 
