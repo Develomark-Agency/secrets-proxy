@@ -7,6 +7,18 @@ import { refresh } from "./refresh";
 const configPath = path.join(os.homedir(), "/.dvm-secrets");
 const credentialsPath = path.join(configPath, "credentials.json");
 
+let refreshPromise: Promise<void> | null = null;
+
+async function refreshOnce() {
+  if(!refreshPromise) {
+    refreshPromise = refresh().finally(() => {
+      refreshPromise = null;
+    });
+  }
+
+  return await refreshPromise;
+}
+
 function findBestMatch(
   entries: Record<string, TokenCredentials>,
   cwd: string
@@ -86,7 +98,7 @@ export async function loadCredentialsWithAutoRefresh() {
   }
 
   if(credentials.isExpired) {
-    await refresh();
+    await refreshOnce();
     credentials = await loadCredentials();
   }
 
