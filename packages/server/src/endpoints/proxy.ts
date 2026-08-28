@@ -4,6 +4,7 @@ import { env, waitUntil } from "cloudflare:workers";
 import { apiKeySchema } from "../schemas";
 import { drizzle } from "drizzle-orm/d1";
 import * as schema from "../db/schema";
+import { matchEndpoint } from "../util/match-endpoint";
 
 function hexToString(hexString: string) {
   const pairs = hexString.match(/.{1,2}/g);
@@ -45,32 +46,6 @@ async function decryptApiProperties(apiProperties: string) {
   } catch(e) {
     return null;
   }
-}
-
-async function findMatchingKey(
-  store: Pick<KVNamespace, "get" | "list">,
-  endpoint: URL,
-  prefix: string
-) {
-  const apiProperties = await store.list({ prefix: `${prefix}${endpoint.hostname}` });
-
-  return apiProperties.keys
-    .toSorted((a, b) => b.name.length - a.name.length)
-    .find(key => (endpoint.hostname + endpoint.pathname).startsWith(key.name.slice(prefix.length)));
-}
-
-export async function matchEndpoint(
-  store: Pick<KVNamespace, "get" | "list">,
-  endpoint: URL,
-  environment: "development" | "production"
-) {
-  if(environment === "development") {
-    const developmentKey = await findMatchingKey(store, endpoint, "api:development:");
-    if(developmentKey) return await store.get(developmentKey.name);
-  }
-
-  const productionKey = await findMatchingKey(store, endpoint, "api:");
-  if(productionKey) return await store.get(productionKey.name);
 }
 
 export const proxy = new Hono()
